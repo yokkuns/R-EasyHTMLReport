@@ -5,11 +5,11 @@ from: %s
 to: %s
 subject: %s
 body: %s"
-        s <- sprintf(s,from,to,subject,body)
+        s <- sprintf(s,from,to,subject,msg)
         cat(s)
         return(s)
     }
-    sendmail(from,to,subject,body,headers=headers,control=control)
+    sendmail(from,to,subject,msg,headers=headers,control=control)
 }
 
 easyHtmlReport <-
@@ -163,21 +163,21 @@ simpleHtmlReport <- function(report.name, mail.from, mail.to, subject, report.da
              table.text <- ifelse(is.null(d$table.text), "Table:", d$table.text)
              fl[[key]] <<- sprintf("easy_html_report_tmp_%s.tsv",as.numeric(Sys.time()))
              Sys.sleep(1)
-             graph.rmd.func <- ifelse(is.null(d$graph.rmd.func), 
-                                      simpleRmdGraphDateLine, 
-                                      d$graph.rmd.func)
-             table.rmd.func <- ifelse(is.null(d$table.rmd.func),
-                                      simpleRmdXtableTail,
-                                      d$table.rmd.func)
+             if(is.null(d$graph.rmd.func)){
+               d$graph.rmd.func <- simpleRmdGraphDateLine
+             }
+             if(is.null(d$table.rmd.func)){
+               d$table.rmd.func <- simpleRmdXtableTail
+             }
              
              write.table(d$data[,c(id,variable,value)], file=fl[[key]], 
                          sep="\t", col.names=F, row.names=F)
              
              rmd <- c(sprintf("## %s", key),
                       simpleRmdReadData(fl[[key]]),
-                      graph.rmd.func(graph.text, ylab=key, fig.width=fig.width,fig.height=fig.height),
-                      table.rmd.func(table.text))
-             gen.rmd
+                      d$graph.rmd.func(graph.text, ylab=key, fig.width=fig.width,fig.height=fig.height),
+                      d$table.rmd.func(table.text))
+             rmd
            })
   rmd.file <- sprintf("easy_html_report_tmp_%s.Rmd",as.numeric(Sys.time()))
   
