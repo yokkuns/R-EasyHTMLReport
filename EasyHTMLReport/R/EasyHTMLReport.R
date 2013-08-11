@@ -1,4 +1,4 @@
-sendmailEx <- function(from,to,subject,body,headers=list(),control=list(),is.debug=F){
+sendmailEx <- function(from,to,subject,msg,headers=list(),control=list(),is.debug=F){
     if( is.debug ){
         s <- "
 from: %s
@@ -59,10 +59,22 @@ function(rmd.file,from,to,subject,headers=list(),control=list(),
 }
 
 
-simpleRmdHeader <- function(report.title){
+simpleRmdHeader <- function(report.name){
     s <- "# %s"
 
-    sprintf(s, report.title)
+    sprintf(s, report.name)
+}
+
+simpleRmdLibrary <- function(){
+  s <- "
+  \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE}
+  \rlibrary(ggplot2)
+  \rlibrary(scales)
+  \rlibrary(xtable)
+  \rlibrary(reshape2)
+  \r```"
+  
+  s
 }
 
 simpleRmdReadData <- function(f){
@@ -75,7 +87,7 @@ s <-
   sprintf(s, f)
 }
 
-simpleRmdXtable <- function(table.text="Table:"){
+simpleRmdXtableTail <- function(table.text="Table:"){
     s <- 
 "
   \r%s
@@ -85,6 +97,18 @@ simpleRmdXtable <- function(table.text="Table:"){
   \rprint(xtable(tail(data.table)), 'html', include.rownames=F)
   \r```"
     sprintf(s, table.text)
+}
+
+simpleRmdXtableAll <- function(table.text="Table:"){
+  s <- 
+    "
+  \r%s
+  \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE,results='asis'}
+  \rdata.table <- dcast(data, x~variable, value.var='value')
+  \rdata.table$x <- as.character(data.table$x)
+  \rprint(xtable(data.table), 'html', include.rownames=F)
+  \r```"
+  sprintf(s, table.text)
 }
 
 simpleRmdGraphDateLine <- function(graph.txt="Graph:",fig.height=4,fig.width=8,xlab="",ylab="value",y.label="comma",...){
@@ -121,10 +145,11 @@ simpleRmdFooter <- function(footer.message="This report email was created in eas
     sprintf(s,footer.message)
 }
 
-simpleHtmlReport <- function(title, mail.from, mail.to, subject, report.data){
+simpleHtmlReport <- function(report.name, mail.from, mail.to, subject, report.data,
+                             rmd.header=simpleRmdHeader,rmd.footer=simpleRmdFooter){
   report.titles <- names(report.data)
-  
   fl <- list()
+  
   report.list <- 
     sapply(report.titles,
            function(key){
@@ -133,22 +158,38 @@ simpleHtmlReport <- function(title, mail.from, mail.to, subject, report.data){
              variable <- ifelse(is.null(d$variable),"variable",d$variable)
              value <- ifelse(is.null(d$value), "value", d$value)
              graph.text <- ifelse(is.null(d$graph.text), "Graph:", d$graph.text)
+             fig.width <- ifelse(is.null(d$fig.width), 8, d$fig.width)
+             fig.height <- ifelse(is.null(d$fig.height), 4, d$fig.height)
              table.text <- ifelse(is.null(d$table.text), "Table:", d$table.text)
              fl[[key]] <<- sprintf("easy_html_report_tmp_%s.tsv",as.numeric(Sys.time()))
              Sys.sleep(1)
-             graph.type <- ifelse(is.null(d$graph.type), 
-                                  date_line(graph.text, ylab=key), 
-                                  eval(parse(text=d$graph.type))(graph.text, ylab=key))
-             write.table(d$data[,c(id,variable,value)], file=fl[[key]], sep="\t", col.names=F, row.names=F)
-             gen.rmd <- c(sprintf("## %s", key),
-                          read_data(fl[[key]]),
-                          graph.type,
-                          xtable_tail(table.text))
+             graph.rmd.func <- ifelse(is.null(d$graph.rmd.func), 
+                                      simpleRmdGraphDateLine, 
+                                      d$graph.rmd.func)
+             table.rmd.func <- ifelse(is.null(d$table.rmd.func),
+                                      simpleRmdXtableTail,
+                                      d$table.rmd.func)
+             
+             write.table(d$data[,c(id,variable,value)], file=fl[[key]], 
+                         sep="\t", col.names=F, row.names=F)
+             
+             rmd <- c(sprintf("## %s", key),
+                      simpleRmdReadData(fl[[key]]),
+                      graph.rmd.func(graph.text, ylab=key, fig.width=fig.width,fig.height=fig.height),
+                      table.rmd.func(table.text))
              gen.rmd
            })
   rmd.file <- sprintf("easy_html_report_tmp_%s.Rmd",as.numeric(Sys.time()))
-  writeLines(c(sprintf("# %s",subject),init(), report.list), rmd.file)
+  
+  # write rmd file
+  writeLines(c(rmd.header(report.name),
+               simpleRmdLibrary(),
+               report.list,
+               rmd.footer()), 
+             rmd.file)
+  
   res <- easyHtmlReport(rmd.file, mail.from, mail.to, subject)
+  
   fl[["rmd.file"]] <- rmd.file
   fl[["tmp.rmd.file"]] <- sprintf("%s.tmp.Rmd",rmd.file)
   for(tmp.file in fl){

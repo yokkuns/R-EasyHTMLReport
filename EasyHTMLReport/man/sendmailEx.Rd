@@ -15,13 +15,12 @@
   \item{subject}{Subject line of message.}
 
   \item{msg}{Body text of message or a list containing
-  \code{\link{mime_part}} objects.}
+  sendmailR::mime_part objects.}
 
   \item{headers}{Any other headers to include.}
 
   \item{control}{List of SMTP server settings. Valid values
-  are the possible options for
-  \code{\link{sendmailR::sendmail_options}}.}
+  are the possible options for sendmailR::sendmail_options.}
   
   \item{is.debug}{ debug flag. If TRUE, not send mail.}
   
@@ -40,6 +39,4 @@ sendmail(from, to, subject, body,
          control=list(smtpServer="ASPMX.L.GOOGLE.COM"))
 }
 }
-\seealso{
-  \code{\link{sendmailR::sendmail}}
-}
+

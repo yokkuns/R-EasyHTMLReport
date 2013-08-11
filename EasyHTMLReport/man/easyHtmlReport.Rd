@@ -3,9 +3,13 @@
 \title{
 Easy to send HTML reports.
 }
-
+\description{
+Send HTML mail from Rmd file
+}
 \usage{
-easyHtmlReport(rmd.file, from, to, subject, headers = list(), control = list(), markdown.options = c("hard_wrap", "use_xhtml", "smartypants"), stylesheet = "",echo.disable=TRUE)
+easyHtmlReport(rmd.file, from, to, subject, headers = list(), control = list(), 
+markdown.options = c("hard_wrap", "use_xhtml", "smartypants"), 
+stylesheet = "",echo.disable=TRUE,is.debug=F)
 }
 
 \arguments{
@@ -36,6 +40,9 @@ easyHtmlReport(rmd.file, from, to, subject, headers = list(), control = list(), 
   \item{echo.disable}{
     if echo.disable=TRUE, to set the "echo=FALSE" and "message=FALSE"
 }
+  \item{is.debug}{
+    if is.debug==TRUE, Do not send mail.
+  }
 }
 
 \value{

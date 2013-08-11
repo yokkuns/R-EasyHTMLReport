@@ -1,9 +1,11 @@
 Package: EasyHTMLReport
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
+Title: EasyHTMLReport
+Version: 0.1.0
 Date: 2013-08-11
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Yohei Sato <yohei0511@gmail.com>
+Maintainer: Yohei Sato <yohei0511@gmail.com>
+Description: It is a package that can be used to send HTML reports easily.
+License: GPL-2
+Depends: base64enc,markdown,knitr(>= 0.7)
+

@@ -1,2 +1,4 @@
 export(easyHtmlReport)
+export(sendmailEx)
+export(simpleHtmlReport)
 
