@@ -30,6 +30,7 @@ simpleHtmlReport(report.name, mail.from, mail.to, subject, report.data,
   \item{graph.text}{ Text to be inserted just before the graph. default is "Graph:" }
   \item{fig.width}{ figure width. default is 8 }
   \item{fig.height}{ figure height. default is 4}
+  \item{position}{ graph position.}
   \item{graph.rmd.func}{ Generating function in the graph of the Rmd. default is simpleRmdGraphDateLine }
   \item{table.text}{ Text to be inserted just before the table. default is "Table:"}
   \item{table.rmd.func}{ Generating function in the graph of the Rmd. default is simpleRmdXtableTail }

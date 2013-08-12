@@ -87,16 +87,33 @@ s <-
   sprintf(s, f)
 }
 
-simpleRmdXtableTail <- function(table.text="Table:"){
+simpleRmdXtable <- function(table.text="Table:"){
     s <- 
 "
   \r%s
   \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE,results='asis'}
   \rdata.table <- dcast(data, x~variable, value.var='value')
   \rdata.table$x <- as.character(data.table$x)
-  \rprint(xtable(tail(data.table)), 'html', include.rownames=F)
+  \rif(nrow(data.table)>20){
+  \r  print(xtable(tail(data.table)), 'html', include.rownames=F)
+  \r} else {
+  \rprint(xtable(data.table), 'html', include.rownames=F)
+  \r}
   \r```"
     sprintf(s, table.text)
+}
+
+
+simpleRmdXtableTail <- function(table.text="Table:"){
+  s <- 
+    "
+  \r%s
+  \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE,results='asis'}
+  \rdata.table <- dcast(data, x~variable, value.var='value')
+  \rdata.table$x <- as.character(data.table$x)
+  \rprint(xtable(tail(data.table)), 'html', include.rownames=F)
+  \r```"
+  sprintf(s, table.text)
 }
 
 simpleRmdXtableAll <- function(table.text="Table:"){
@@ -111,7 +128,9 @@ simpleRmdXtableAll <- function(table.text="Table:"){
   sprintf(s, table.text)
 }
 
-simpleRmdGraphDateLine <- function(graph.txt="Graph:",fig.height=4,fig.width=8,xlab="",ylab="value",y.label="comma",...){
+simpleRmdGraphDateLine <- function(graph.txt="Graph:",fig.height=4,fig.width=8,
+                                   xlab="",ylab="value",y.label="comma",
+                                   position="identity",...){
     s <- 
 "
   \r%s
@@ -120,16 +139,53 @@ simpleRmdGraphDateLine <- function(graph.txt="Graph:",fig.height=4,fig.width=8,x
   \rylimits <- c(0,max(data$value))
   \rdata$variable <- as.factor(data$variable)
   \rgp <- ggplot(data, aes(x=x, y=value, col=variable)) +
-  \rgeom_line() +
+  \rgeom_line(position='%s') +
   \rxlab('%s') +
   \rylab('%s') +
   \rscale_y_continuous(label=%s, limits=ylimits)
   
   \rprint(gp)
   \r```"
-    sprintf(s, graph.txt, fig.height, fig.width, xlab, ylab, y.label)
+    sprintf(s, graph.txt, fig.height, fig.width, position,xlab, ylab, y.label)
  }
 
+
+simpleRmdGraphLine <- function(graph.txt="Graph:",fig.height=4,fig.width=8,
+                               xlab="",ylab="value",y.label="comma",
+                               position="identity",...){
+  s <- 
+    "
+  \r%s
+  \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE,fig.height=%s,fig.width=%s}
+  \rylimits <- c(0,max(data$value))
+  \rdata$variable <- as.factor(data$variable)
+  \rgp <- ggplot(data, aes(x=x, y=value, col=variable)) +
+  \rgeom_line(position='%s') +
+  \rxlab('%s') +
+  \rylab('%s') +
+  \rscale_y_continuous(label=%s, limits=ylimits)
+  
+  \rprint(gp)
+  \r```"
+  sprintf(s, graph.txt, fig.height, fig.width, position,xlab, ylab, y.label)
+}
+
+simpleRmdGraphBar <- function(graph.txt="Graph:",fig.height=4,fig.width=8,xlab="",ylab="value",y.label="comma",position="stack",...){
+  s <- 
+    "
+  \r%s
+  \r```{r warning=FALSE,error=FALSE,echo=FALSE,message=FALSE,fig.height=%s,fig.width=%s}
+  \rdata$variable <- as.factor(data$variable)
+  \rgp <- ggplot(data, aes(x=x, y=value, fill=variable)) +
+  \rgeom_bar(position='%s') +
+  \rxlab('%s') +
+  \rylab('%s') +
+  \rscale_y_continuous(label=%s)
+  
+  \rprint(gp)
+  \r```"
+  sprintf(s, graph.txt, fig.height, fig.width, position,xlab, ylab, y.label)
+}
 
 simpleRmdGraphNoOutput <- function(...){
     s <- ""
@@ -139,8 +195,8 @@ simpleRmdGraphNoOutput <- function(...){
 
 simpleRmdFooter <- function(footer.message="This report email was created in easyHtmlReport package."){
     s <- 
-"--------------------------
-%s
+"\r--------------------------
+\r%s
 "
     sprintf(s,footer.message)
 }
@@ -160,14 +216,27 @@ simpleHtmlReport <- function(report.name, mail.from, mail.to, subject, report.da
              graph.text <- ifelse(is.null(d$graph.text), "Graph:", d$graph.text)
              fig.width <- ifelse(is.null(d$fig.width), 8, d$fig.width)
              fig.height <- ifelse(is.null(d$fig.height), 4, d$fig.height)
+             scale.y.label <- ifelse(is.null(d$scale.y.label) && max(d$data[,value])>1000,
+                                     "comma","rescale_none")
              table.text <- ifelse(is.null(d$table.text), "Table:", d$table.text)
              fl[[key]] <<- sprintf("easy_html_report_tmp_%s.tsv",as.numeric(Sys.time()))
              Sys.sleep(1)
              if(is.null(d$graph.rmd.func)){
-               d$graph.rmd.func <- simpleRmdGraphDateLine
+               if(class(d$data[,id]) %in% c('character','factor')){
+                 if(class(try(as.Date(d$data[,id]),silent=T)) == 'try-error'){
+                   position <- ifelse(is.null(d$position),"stack",d$position)
+                   d$graph.rmd.func <- simpleRmdGraphBar
+                 } else {
+                   position <- ifelse(is.null(d$position),"identity",d$position)
+                   d$graph.rmd.func <- simpleRmdGraphDateLine
+                 }
+               } else {
+                 position <- ifelse(is.null(d$position),"identity",d$position)
+                 d$graph.rmd.func <- simpleRmdGraphLine
+               }
              }
              if(is.null(d$table.rmd.func)){
-               d$table.rmd.func <- simpleRmdXtableTail
+               d$table.rmd.func <- simpleRmdXtable
              }
              
              write.table(d$data[,c(id,variable,value)], file=fl[[key]], 
@@ -175,7 +244,9 @@ simpleHtmlReport <- function(report.name, mail.from, mail.to, subject, report.da
              
              rmd <- c(sprintf("## %s", key),
                       simpleRmdReadData(fl[[key]]),
-                      d$graph.rmd.func(graph.text, ylab=key, fig.width=fig.width,fig.height=fig.height),
+                      d$graph.rmd.func(graph.text, ylab=key, y.label=scale.y.label,
+                                       fig.width=fig.width,fig.height=fig.height,
+                                       position=position),
                       d$table.rmd.func(table.text))
              rmd
            })

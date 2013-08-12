@@ -1,0 +1,71 @@
+simpleHtmlReport Sample
+========================================================
+
+## パッケージ
+```{r}
+library(EasyHTMLReport)
+```
+
+## Parameter
+```{r warning=FALSE}
+report.name <- "Simple HTML Report Test"
+mail.from <- "yokkuns@localhost"
+mail.to <- "yohei0511@gmail.com"
+subject <- "simpleHtmlReport Test"
+```
+
+## サンプルデータ生成
+```{r warning=FALSE}
+A <- rbind(
+  data.frame(id=c("2013-08-01","2013-08-02","2013-08-03",
+                  "2013-08-04","2013-08-05"),
+             variable="A",
+             value=c(100,123,130,125,140)),
+  data.frame(id=c("2013-08-01","2013-08-02","2013-08-03",
+                  "2013-08-04","2013-08-05"),
+             variable="B",
+             value=c(90,100,120,140,110)),
+  data.frame(id=c("2013-08-01","2013-08-02","2013-08-03",
+                  "2013-08-04","2013-08-05"),
+             variable="C",
+             value=c(150,130,150,160,150)))
+
+D <- rbind(
+  data.frame(id=c(1,2,3,4,5),
+             variable="D",
+             value=c(150,130,150,160,150)),
+  data.frame(id=c(1,2,3,4,5),
+             variable="F",
+             value=c(130,140,150,160,170)))
+
+G <- rbind(
+  data.frame(id=c("a","b","c","d","e"),
+             variable="G",
+             value=c(150,130,150,160,150)),
+  data.frame(id=c("a","b","c","d","e"),
+             variable="H",
+             value=c(100,120,90,130,120)))
+
+I <- rbind(
+  data.frame(x=c(1,2,3,4,5),
+             segment="I",
+             v=c(0.15,0.13,0.15,0.16,0.15)),
+  data.frame(x=c(1,2,3,4,5),
+             segment="J",
+             v=c(0.13,0.14,0.15,0.16,0.17)))
+```
+
+
+## HTMLレポートメール送信
+```{r warning=FALSE,message=FALSE,error=FALSE,results='hide'}
+simpleHtmlReport(report.name,
+                 mail.from,
+                 mail.to,
+                 subject,
+                 report.data=list(
+                     "Report1" = list(data=A),
+                     "Report2" = list(data=D),
+                     "Report3" = list(data=G),
+                     "Report4" = list(data=I, id="x",variable="segment",value="v")
+                 ))
+```

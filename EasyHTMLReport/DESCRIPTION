@@ -7,5 +7,5 @@ Author: Yohei Sato <yohei0511@gmail.com>
 Maintainer: Yohei Sato <yohei0511@gmail.com>
 Description: It is a package that can be used to send HTML reports easily.
 License: GPL-2
-Depends: base64enc,markdown,knitr(>= 0.7)
+Depends: base64enc,markdown,knitr(>= 0.7),ggplot2,scales,xtable
 

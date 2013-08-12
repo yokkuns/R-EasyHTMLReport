@@ -22,6 +22,14 @@ C <- data.frame(id=c("2013-08-01","2013-08-02","2013-08-03",
                 variable="C",
                 value=c(150,130,150,160,150))
 
+D <- data.frame(id=c(1,2,3,4,5),
+                variable="D",
+                value=c(150,130,150,160,150))
+
+G <- data.frame(id=c("a","b","c","d","e"),
+                variable="G",
+                value=c(150,130,150,160,150))
+
 data1 <- rbind(A,B,C)
 
 set.seed(2)
@@ -39,5 +47,7 @@ simpleHtmlReport("Simple HTML Report",
                  report.data=list(
                      "Report1" = list(data=data1),
                      "Report2" = list(data=data2),
-                     "Report3" = list(data=data3)
+                     "Report3" = list(data=data3),
+                     "Report4" = list(data=D),
+                     "Report5" = list(data=G)
                  ))
