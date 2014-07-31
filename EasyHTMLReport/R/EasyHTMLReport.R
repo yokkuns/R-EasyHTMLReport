@@ -1,3 +1,8 @@
+# .easyHtmlReport_g_subject <- NULL
+# .easyHtmlReport_g_err_mail_to <- NULL
+# .easyHtmlReport_g_rmd.file <- NULL
+
+
 sendmailEx <- function(from,to,subject,msg,headers=list(),control=list(),is.debug=F){
     if( is.debug ){
         s <- "
@@ -15,7 +20,7 @@ body: %s"
 easyHtmlReport <-
 function(rmd.file,from,to,subject,headers=list(),control=list(),
          markdown.options=c("hard_wrap","use_xhtml","smartypants"),
-         stylesheet="", echo.disable=TRUE, is.debug=F){
+         stylesheet="", echo.disable=TRUE, is.debug=F, err_mail_to = NULL){
   
   insert.echo.false <- function(s){
     s <- gsub("(```\\{r)([^\\}]*)(echo=T[^,]*)([^\\}]*)(\\})", "\\1\\2\\4\\5",s)
@@ -37,6 +42,23 @@ function(rmd.file,from,to,subject,headers=list(),control=list(),
   md.file <- paste(f,"md",sep=".")
   mail.html.file <- paste(f,".html",sep="") ## メール用
 
+  if(is.null(err_mail_to) == F){
+    pre_chink_optoin_err <- knitr::opts_chunk$get("error")
+    pre_optoin_err <- getOption("error")
+    .easyHtmlReport_g_subject <<- subject
+    .easyHtmlReport_g_err_mail_to <<- err_mail_to
+    .easyHtmlReport_g_rmd.file <<- rmd.file
+    
+    on.exit(knitr::opts_chunk$set(error = pre_chink_optoin_err), add = TRUE)
+    on.exit(options(error = pre_optoin_err), add = TRUE)
+    on.exit(.easyHtmlReport_g_subject <<- NULL, add = TRUE)
+    on.exit(.easyHtmlReport_g_err_mail_to <<- NULL, add = TRUE)
+    on.exit(.easyHtmlReport_g_rmd.file <<- NULL, add = TRUE)
+    
+    options(error = SendErrMail)
+    knitr::opts_chunk$set(error = F)
+  }
+  
   knit(input=f,output=md.file)
   markdownToHTML(file=md.file,output=mail.html.file,
                  stylesheet=stylesheet,
@@ -267,4 +289,56 @@ simpleHtmlReport <- function(report.name, mail.from, mail.to, subject, report.da
     file.remove(tmp.file)
   }
   res
+}
+
+
+SendErrMail <- function(){
+  
+  headers <- list(`Content-Type` = "text/html; charset=\"utf-8\"")
+  
+  # トレースの取得
+  trace_message <- ldply(traceback(2), function(d){gsub(" ", "" , paste(d, collapse = ""))})
+  trace_message <- trace_message[, 1]
+  
+  #トレースの不要な部分を削除し、逆順に並び替える
+  if(length(trace_message) >= 17){trace_message <- trace_message[3 : (length(trace_message) - 16)]}
+  trace_message <- rev(trace_message)  
+  
+  #エラー行数を取得
+  err_line <- 0
+  err_line_func <- 0
+  err_line_message <- c("")  
+  if(length(grep("at<text>#", trace_message[1])) >= 1){
+    err_line_func <- strsplit(trace_message[1], "at<text>#")[[1]][1]
+    err_line <- strsplit(trace_message[1], "at<text>#")[[1]][2]
+    trace_message[1] <- err_line_func
+    
+    err_line_message1 <- paste0(err_line_func)
+    err_line_message2 <- paste0(err_line, "行目")
+    err_line_message <- c("<br><br>","< エラー箇所 >", "<br>", err_line_message1, "<br>", err_line_message2, " ")      
+  }
+  
+  trace_message <- paste("●", trace_message, "<br>")
+  
+  title_message <-c("< 件名 >"
+                    , "<br>", .easyHtmlReport_g_subject, " "
+                    , "<br><br>", "< エラー発生日時 >"
+                    , "<br>", as.character(Sys.time()), " "
+                    , "<br><br>", "< rmdファイル >"
+                    , "<br>", .easyHtmlReport_g_rmd.file, " ")  
+  
+  # 本文作成
+  trace_message <- c(title_message
+                     , "<br><br>", "< エラーメッセージ >"
+                     , "<br>", geterrmessage()
+                     , "", err_line_message 
+                     , "<br><br>", "< 関数トレース >"
+                     , "<br>", trace_message)
+  sendmailEx
+  # メール送信
+  sendmail(from = .easyHtmlReport_g_err_mail_to, to = .easyHtmlReport_g_err_mail_to, subject = "Report_ERROR",  
+           msg = trace_message, 
+           headers = headers, 
+           control = list())
+  
 }
