@@ -1,8 +1,3 @@
-# .easyHtmlReport_g_subject <- NULL
-# .easyHtmlReport_g_err_mail_to <- NULL
-# .easyHtmlReport_g_rmd.file <- NULL
-
-
 sendmailEx <- function(from,to,subject,msg,headers=list(),control=list(),is.debug=F){
     if( is.debug ){
         s <- "
