@@ -15,7 +15,8 @@ body: %s"
 easyHtmlReport <-
 function(rmd.file,from,to,subject,headers=list(),control=list(),
          markdown.options=c("hard_wrap","use_xhtml","smartypants"),
-         stylesheet="", echo.disable=TRUE, is.debug=F, err_mail_to = NULL){
+         stylesheet="", echo.disable=TRUE, is.debug=F, err_mail_from = NULL, err_mail_to = NULL,
+         remove_md = T, remove_html = T, remove_figure = T){
   
   insert.echo.false <- function(s){
     s <- gsub("(```\\{r)([^\\}]*)(echo=T[^,]*)([^\\}]*)(\\})", "\\1\\2\\4\\5",s)
@@ -38,16 +39,21 @@ function(rmd.file,from,to,subject,headers=list(),control=list(),
   mail.html.file <- paste(f,".html",sep="") ## メール用
 
   if(is.null(err_mail_to) == F){
+    if(is.null(err_mail_from)){
+      err_mail_from <- err_mail_to
+    }
     pre_chink_optoin_err <- knitr::opts_chunk$get("error")
     pre_optoin_err <- getOption("error")
     .easyHtmlReport_g_subject <<- subject
     .easyHtmlReport_g_err_mail_to <<- err_mail_to
+    .easyHtmlReport_g_err_mail_from <<- err_mail_from 
     .easyHtmlReport_g_rmd.file <<- rmd.file
     
     on.exit(knitr::opts_chunk$set(error = pre_chink_optoin_err), add = TRUE)
     on.exit(options(error = pre_optoin_err), add = TRUE)
     on.exit(.easyHtmlReport_g_subject <<- NULL, add = TRUE)
     on.exit(.easyHtmlReport_g_err_mail_to <<- NULL, add = TRUE)
+    on.exit(.easyHtmlReport_g_err_mail_from <<- NULL, add = TRUE)
     on.exit(.easyHtmlReport_g_rmd.file <<- NULL, add = TRUE)
     
     options(error = SendErrMail)
@@ -71,7 +77,10 @@ function(rmd.file,from,to,subject,headers=list(),control=list(),
   headers <- list("Content-Type"="text/html; charset=\"utf-8\"")
   res <- sendmailEx(from,to,subject,body,headers=headers,control=control,is.debug=is.debug)
   
-  file.remove(md.file,mail.html.file,paste("figure",list.files("figure"),sep="/")) 
+  if(remove_md){file.remove(md.file)}
+  if(remove_html){file.remove(mail.html.file)}
+  if(remove_figure){file.remove(paste("figure",list.files("figure"),sep="/"))}
+  
   res
 }
 
@@ -331,7 +340,7 @@ SendErrMail <- function(){
                      , "<br>", trace_message)
   sendmailEx
   # メール送信
-  sendmail(from = .easyHtmlReport_g_err_mail_to, to = .easyHtmlReport_g_err_mail_to, subject = "Report_ERROR",  
+  sendmail(from = .easyHtmlReport_g_err_mail_from, to = .easyHtmlReport_g_err_mail_to, subject = "Report_ERROR",  
            msg = trace_message, 
            headers = headers, 
            control = list())
